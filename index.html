@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LeafScan — Plant Disease & Harvest Risk Advisor</title>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,400&family=Karla:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1a0f;
+    --surface: #111f13;
+    --surface2: #172019;
+    --border: #1f3022;
+    --accent: #5ddb7c;
+    --accent2: #f4a942;
+    --accent3: #e05c5c;
+    --text: #e2edd4;
+    --muted: #9aba9e;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Karla', sans-serif; font-size: 16px; min-height: 100vh; overflow-x: hidden; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(61,125,68,0.12) 0%, transparent 60%), radial-gradient(ellipse 60% 80% at 80% 90%, rgba(93,219,124,0.06) 0%, transparent 60%); pointer-events: none; z-index: 0; }
+  .container { max-width: 780px; margin: 0 auto; padding: 44px 24px 80px; position: relative; z-index: 1; }
+  header { margin-bottom: 32px; animation: fadeIn 0.7s ease both; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .brand-icon { width: 40px; height: 40px; background: linear-gradient(135deg, #3a7d44, #5ddb7c); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .brand-name { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--accent); }
+  h1 { font-family: 'Playfair Display', serif; font-size: clamp(30px, 6vw, 52px); font-weight: 800; line-height: 1.1; color: var(--text); margin-bottom: 12px; }
+  h1 em { font-style: italic; color: var(--accent); }
+  .subtitle { color: #b8d4bc; font-size: 17px; font-weight: 400; line-height: 1.7; max-width: 520px; margin-bottom: 28px; }
+  .what-section { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; margin-bottom: 28px; animation: fadeIn 0.7s 0.05s ease both; }
+  .what-title { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700; color: var(--accent); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .feat { display: flex; align-items: flex-start; gap: 10px; }
+  .feat-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+  .feat-icon.green { background: rgba(93,219,124,0.15); }
+  .feat-icon.amber { background: rgba(244,169,66,0.15); }
+  .feat-icon.red { background: rgba(224,92,92,0.15); }
+  .feat-icon.blue { background: rgba(93,180,219,0.15); }
+  .feat-icon.teal { background: rgba(67,219,180,0.12); }
+  .feat-icon.purple { background: rgba(180,93,219,0.12); }
+  .feat-icon.gold { background: rgba(255,213,0,0.12); }
+  .feat-text { font-size: 13px; color: #b8d4bc; line-height: 1.5; }
+  .input-toggle { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 4px; margin-bottom: 16px; gap: 4px; animation: fadeIn 0.7s 0.1s ease both; }
+  .toggle-btn { flex: 1; padding: 11px; border: none; border-radius: 11px; font-family: 'Karla', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: transparent; color: var(--muted); }
+  .toggle-btn.active { background: var(--accent); color: #0d1a0f; }
+  .upload-zone { border: 2px dashed var(--border); border-radius: 20px; padding: 48px 32px; text-align: center; cursor: pointer; transition: all 0.25s; background: var(--surface); position: relative; overflow: hidden; margin-bottom: 16px; }
+  .upload-zone::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(93,219,124,0.05) 0%, transparent 70%); opacity: 0; transition: opacity 0.3s; }
+  .upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); background: var(--surface2); }
+  .upload-zone:hover::before, .upload-zone.dragover::before { opacity: 1; }
+  .upload-icon { font-size: 48px; margin-bottom: 14px; display: block; }
+  .upload-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .upload-sub { color: #b8d4bc; font-size: 15px; margin-bottom: 18px; }
+  .upload-btn-label { display: inline-block; padding: 10px 24px; background: transparent; border: 1px solid var(--accent); border-radius: 100px; color: var(--accent); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'Karla', sans-serif; }
+  .upload-btn-label:hover { background: var(--accent); color: #0d1a0f; }
+  #fileInput { display: none; }
+  .cam-zone { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px; margin-bottom: 16px; }
+  .cam-preview-wrap { width: 100%; border-radius: 12px; overflow: hidden; background: #060f07; position: relative; margin-bottom: 14px; min-height: 220px; display: flex; align-items: center; justify-content: center; }
+  #camVideo { width: 100%; max-height: 260px; object-fit: cover; display: none; border-radius: 12px; }
+  #camCanvas { display: none; }
+  .cam-placeholder { text-align: center; padding: 36px 20px; color: var(--muted); font-size: 14px; }
+  .cam-placeholder span { font-size: 36px; display: block; margin-bottom: 10px; }
+  #camCaptured { width: 100%; max-height: 260px; object-fit: cover; border-radius: 12px; display: none; }
+  .cam-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .cam-btn { padding: 10px 22px; background: linear-gradient(135deg, #3a7d44, #5ddb7c); color: #0d1a0f; border: none; border-radius: 100px; font-family: 'Karla', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+  .cam-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(93,219,124,0.25); }
+  .cam-btn.secondary { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+  .cam-btn.secondary:hover { border-color: var(--accent); color: var(--accent); box-shadow: none; transform: none; }
+  .cam-hint { font-size: 12px; color: var(--muted); text-align: center; margin-top: 10px; }
+  .preview-wrap { display: none; position: relative; border-radius: 20px; overflow: hidden; margin-bottom: 16px; animation: fadeIn 0.4s ease both; border: 1px solid var(--border); }
+  .preview-img { width: 100%; max-height: 300px; object-fit: cover; display: block; }
+  .preview-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(13,26,15,0.95)); padding: 20px; display: flex; align-items: center; justify-content: space-between; }
+  .preview-name { font-size: 14px; color: var(--text); font-weight: 500; }
+  .remove-btn { background: rgba(224,92,92,0.15); border: 1px solid rgba(224,92,92,0.3); border-radius: 6px; color: var(--accent3); font-size: 13px; padding: 5px 12px; cursor: pointer; font-family: 'Karla', sans-serif; transition: all 0.2s; }
+  .remove-btn:hover { background: rgba(224,92,92,0.25); }
+  .extra-inputs { display: none; gap: 12px; margin-bottom: 16px; animation: fadeIn 0.4s ease both; }
+  .extra-inputs.visible { display: flex; }
+  .extra-select { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-family: 'Karla', sans-serif; font-size: 14px; padding: 11px 14px; outline: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239aba9e' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; cursor: pointer; transition: border-color 0.2s; }
+  .extra-select:focus { border-color: var(--accent); }
+  .extra-select option { background: var(--surface2); }
+  .analyze-btn { width: 100%; padding: 17px; background: linear-gradient(135deg, #3a7d44, #5ddb7c); color: #0d1a0f; border: none; border-radius: 14px; font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; cursor: pointer; transition: all 0.25s; display: none; }
+  .analyze-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(93,219,124,0.25); }
+  .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .analyze-btn.visible { display: block; }
+  .loading { display: none; text-align: center; padding: 60px 20px; animation: fadeIn 0.4s ease both; }
+  .leaf-spinner { font-size: 52px; animation: leafSpin 2s ease-in-out infinite; display: block; margin-bottom: 20px; }
+  .loading-title { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--text); margin-bottom: 8px; }
+  .loading-sub { color: #b8d4bc; font-size: 15px; }
+  .scan-bar { width: 200px; height: 3px; background: var(--border); border-radius: 10px; margin: 20px auto 0; overflow: hidden; }
+  .scan-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 10px; transition: width 3s ease; width: 0%; }
+  .error-banner { display: none; background: rgba(224,92,92,0.1); border: 1px solid rgba(224,92,92,0.3); border-radius: 12px; padding: 14px 18px; color: #f08080; font-size: 14px; margin-bottom: 16px; line-height: 1.6; }
+  .results { display: none; animation: fadeIn 0.5s ease both; }
+  .verdict { border-radius: 18px; padding: 24px; margin-bottom: 20px; display: flex; align-items: center; gap: 20px; }
+  .verdict.healthy { background: rgba(93,219,124,0.1); border: 1px solid rgba(93,219,124,0.25); }
+  .verdict.warning { background: rgba(244,169,66,0.1); border: 1px solid rgba(244,169,66,0.25); }
+  .verdict.danger  { background: rgba(224,92,92,0.1);  border: 1px solid rgba(224,92,92,0.25); }
+  .verdict-icon { font-size: 44px; flex-shrink: 0; }
+  .verdict-title { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+  .verdict.healthy .verdict-title { color: var(--accent); }
+  .verdict.warning .verdict-title { color: var(--accent2); }
+  .verdict.danger  .verdict-title { color: var(--accent3); }
+  .verdict-sub { color: #b8d4bc; font-size: 15px; line-height: 1.6; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  .info-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+  .info-card.full { grid-column: 1 / -1; }
+  .info-label { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .info-value { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .info-detail { font-size: 14px; color: #b8d4bc; line-height: 1.6; }
+  .conf-bar-wrap { margin-top: 8px; }
+  .conf-bar-bg { height: 6px; background: var(--border); border-radius: 10px; overflow: hidden; }
+  .conf-bar-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--accent), #3a7d44); transition: width 1s ease; width: 0%; }
+  .conf-label { font-size: 12px; color: var(--muted); margin-top: 5px; display: flex; justify-content: space-between; }
+  .severity-dots { display: flex; gap: 6px; margin-top: 8px; }
+  .severity-dot { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--muted); transition: all 0.3s; }
+  .severity-dot.active-low  { background: rgba(93,219,124,0.2); border-color: var(--accent);  color: var(--accent); }
+  .severity-dot.active-med  { background: rgba(244,169,66,0.2); border-color: var(--accent2); color: var(--accent2); }
+  .severity-dot.active-high { background: rgba(224,92,92,0.2);  border-color: var(--accent3); color: var(--accent3); }
+  .treatment-list { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }
+  .treatment-item { display: flex; gap: 12px; align-items: flex-start; font-size: 15px; line-height: 1.6; color: #d4e8d6; }
+  .t-num { width: 24px; height: 24px; border-radius: 50%; background: rgba(93,219,124,0.15); border: 1px solid rgba(93,219,124,0.3); color: var(--accent); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .harvest-banner { border-radius: 14px; padding: 20px 22px; margin-bottom: 16px; display: flex; align-items: center; gap: 16px; line-height: 1.6; }
+  .harvest-banner.save    { background: rgba(93,219,124,0.08); border: 1px solid rgba(93,219,124,0.2); }
+  .harvest-banner.risk    { background: rgba(244,169,66,0.08);  border: 1px solid rgba(244,169,66,0.2); }
+  .harvest-banner.abandon { background: rgba(224,92,92,0.08);   border: 1px solid rgba(224,92,92,0.2); }
+  .harvest-icon { font-size: 30px; flex-shrink: 0; }
+  .harvest-title-text { display: block; margin-bottom: 4px; font-size: 16px; font-weight: 600; color: var(--text); }
+  .harvest-detail-text { color: #b8d4bc; font-size: 14px; }
+  .cost-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 6px; }
+  .cost-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; text-align: center; }
+  .cost-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 5px; }
+  .cost-value { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: var(--accent2); }
+  .weather-alert { border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 14px; animation: fadeIn 0.5s ease both; }
+  .weather-alert.rain { background: rgba(244,169,66,0.08); border: 1px solid rgba(244,169,66,0.25); }
+  .weather-alert.good { background: rgba(93,219,124,0.08); border: 1px solid rgba(93,219,124,0.2); }
+  .weather-alert.neutral { background: var(--surface); border: 1px solid var(--border); }
+  .wa-icon { font-size: 28px; flex-shrink: 0; margin-top: 2px; }
+  .wa-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .weather-alert.rain .wa-title { color: var(--accent2); }
+  .weather-alert.good .wa-title { color: var(--accent); }
+  .weather-alert.neutral .wa-title { color: var(--muted); }
+  .wa-text { font-size: 13px; color: #b8d4bc; line-height: 1.6; }
+  .voice-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 20px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .vb-left { display: flex; align-items: center; gap: 10px; }
+  .vb-icon { font-size: 20px; }
+  .vb-text { font-size: 14px; color: #b8d4bc; }
+  .vb-btn { padding: 9px 20px; background: rgba(93,219,124,0.12); border: 1px solid rgba(93,219,124,0.3); border-radius: 100px; color: var(--accent); font-family: 'Karla', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; flex-shrink: 0; }
+  .vb-btn:hover { background: rgba(93,219,124,0.22); }
+  .vb-btn.playing { background: rgba(224,92,92,0.12); border-color: rgba(224,92,92,0.3); color: var(--accent3); }
+  .chat-section { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+  .chat-header { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .chat-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulseDot 2s infinite; }
+  .chat-title { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: var(--text); }
+  .quick-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
+  .chip { padding: 6px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 100px; font-size: 12px; color: var(--muted); cursor: pointer; transition: all 0.2s; font-family: 'Karla', sans-serif; }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chat-messages { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; max-height: 240px; overflow-y: auto; padding-right: 4px; }
+  .chat-messages::-webkit-scrollbar { width: 3px; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .chat-msg { padding: 11px 15px; border-radius: 12px; font-size: 14px; line-height: 1.6; max-width: 88%; }
+  .chat-msg.user { background: rgba(93,219,124,0.1); border: 1px solid rgba(93,219,124,0.2); color: #d4e8d6; align-self: flex-end; }
+  .chat-msg.ai { background: var(--surface2); border: 1px solid var(--border); color: #b8d4bc; align-self: flex-start; }
+  .chat-msg.typing { color: var(--muted); font-style: italic; }
+  .chat-input-row { display: flex; gap: 8px; }
+  .chat-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'Karla', sans-serif; font-size: 14px; padding: 11px 14px; outline: none; transition: border-color 0.2s; }
+  .chat-input:focus { border-color: var(--accent); }
+  .chat-input::placeholder { color: var(--muted); }
+  .chat-send { padding: 11px 20px; background: linear-gradient(135deg, #3a7d44, #5ddb7c); color: #0d1a0f; border: none; border-radius: 10px; font-family: 'Karla', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+  .chat-send:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(93,219,124,0.25); }
+  .restart-btn { width: 100%; margin-top: 8px; padding: 14px; background: transparent; border: 1px solid var(--border); border-radius: 12px; color: var(--muted); font-family: 'Karla', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .restart-btn:hover { border-color: var(--accent); color: var(--accent); }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes leafSpin { 0%, 100% { transform: rotate(-10deg) scale(1); } 50% { transform: rotate(10deg) scale(1.1); } }
+  @keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  @media (max-width: 560px) { .features-grid { grid-template-columns: 1fr 1fr; } .info-grid { grid-template-columns: 1fr; } .info-card.full { grid-column: 1; } .cost-grid { grid-template-columns: 1fr 1fr; } .extra-inputs { flex-direction: column; } .voice-bar { flex-direction: column; align-items: flex-start; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="brand">
+      <div class="brand-icon">🌿</div>
+      <div class="brand-name">LeafScan</div>
+    </div>
+    <h1>Diagnose your <em>crop,</em><br>save your harvest.</h1>
+    <p class="subtitle">Point your camera or upload a photo — AI identifies the disease, checks the weather, and answers your questions.</p>
+    <div class="what-section">
+      <div class="what-title">🌿 What LeafScan can do for you</div>
+      <div class="features-grid">
+        <div class="feat"><div class="feat-icon green">📷</div><div class="feat-text">Identify plant diseases from a photo or live camera</div></div>
+        <div class="feat"><div class="feat-icon amber">⚠️</div><div class="feat-text">Assess disease severity and how much of the leaf is affected</div></div>
+        <div class="feat"><div class="feat-icon red">💊</div><div class="feat-text">Get step-by-step treatment recommendations</div></div>
+        <div class="feat"><div class="feat-icon teal">🌾</div><div class="feat-text">Know if your harvest can still be saved</div></div>
+        <div class="feat"><div class="feat-icon gold">💰</div><div class="feat-text">Estimate treatment costs</div></div>
+        <div class="feat"><div class="feat-icon blue">🌧️</div><div class="feat-text">Get a weather risk alert based on your location</div></div>
+        <div class="feat"><div class="feat-icon purple">💬</div><div class="feat-text">Ask the AI anything about the diagnosed disease</div></div>
+      </div>
+    </div>
+  </header>
+
+  <div id="inputSection">
+    <div class="input-toggle">
+      <button class="toggle-btn active" id="tabUpload" onclick="switchTab('upload')">📁 Upload Photo</button>
+      <button class="toggle-btn" id="tabCam" onclick="switchTab('cam')">📷 Live Camera</button>
+    </div>
+
+    <div id="uploadTab">
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+        <span class="upload-icon" id="uploadIcon">🍃</span>
+        <div class="upload-title" id="uploadTitle">Drop a leaf photo here</div>
+        <div class="upload-sub" id="uploadSub">Clear, close-up photo of the affected leaf works best</div>
+        <span class="upload-btn-label" onclick="event.stopPropagation(); document.getElementById('fileInput').click()">Choose Photo</span>
+        <input type="file" id="fileInput" accept="image/*" onchange="handleFile(this.files[0])">
+      </div>
+      <div class="preview-wrap" id="previewWrap">
+        <img class="preview-img" id="previewImg" src="" alt="Uploaded leaf">
+        <div class="preview-overlay">
+          <span class="preview-name" id="previewName">leaf.jpg</span>
+          <button class="remove-btn" onclick="removeImage()">✕ Remove</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="camTab" style="display:none">
+      <div class="cam-zone">
+        <div class="cam-preview-wrap">
+          <div class="cam-placeholder" id="camPlaceholder"><span>📷</span>Click "Start Camera" to use your device camera</div>
+          <video id="camVideo" autoplay playsinline></video>
+          <canvas id="camCanvas"></canvas>
+          <img id="camCaptured" class="cam-captured-img" alt="Captured leaf">
+        </div>
+        <div class="cam-btns">
+          <button class="cam-btn" id="startCamBtn" onclick="startCamera()">Start Camera</button>
+          <button class="cam-btn" id="captureBtn" style="display:none" onclick="capturePhoto()">📸 Capture Leaf</button>
+          <button class="cam-btn secondary" id="retakeBtn" style="display:none" onclick="retakePhoto()">Retake</button>
+        </div>
+        <div class="cam-hint">Works best in Chrome or Safari on your phone</div>
+      </div>
+    </div>
+
+    <div class="extra-inputs" id="extraInputs">
+      <select class="extra-select" id="cropType">
+        <option value="">Crop type (optional)</option>
+        <option>Rice</option><option>Tea</option><option>Coconut</option>
+        <option>Tomato</option><option>Chilli</option><option>Banana</option>
+        <option>Rubber</option><option>Other</option>
+      </select>
+      <select class="extra-select" id="farmSize">
+        <option value="">Farm size (optional)</option>
+        <option>Small (under 1 acre)</option>
+        <option>Medium (1–5 acres)</option>
+        <option>Large (5+ acres)</option>
+      </select>
+    </div>
+
+    <div class="error-banner" id="errorBanner"></div>
+    <button class="analyze-btn" id="analyzeBtn" onclick="analyze()">🔬 Scan This Leaf</button>
+  </div>
+
+  <div class="loading" id="loading">
+    <span class="leaf-spinner">🌿</span>
+    <div class="loading-title">Scanning your leaf...</div>
+    <div class="loading-sub">AI is analyzing disease patterns, spread, and risk levels</div>
+    <div class="scan-bar"><div class="scan-fill" id="scanFill"></div></div>
+  </div>
+
+  <div class="results" id="results">
+    <div class="verdict" id="verdict">
+      <div class="verdict-icon" id="verdictIcon">🌿</div>
+      <div>
+        <div class="verdict-title" id="verdictTitle">—</div>
+        <div class="verdict-sub" id="verdictSub">—</div>
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-card">
+        <div class="info-label">Disease Detected</div>
+        <div class="info-value" id="diseaseName">—</div>
+        <div class="info-detail" id="diseaseDetail">—</div>
+      </div>
+      <div class="info-card">
+        <div class="info-label">AI Confidence</div>
+        <div class="info-value" id="confValue">—</div>
+        <div class="conf-bar-wrap">
+          <div class="conf-bar-bg"><div class="conf-bar-fill" id="confBar"></div></div>
+          <div class="conf-label"><span>0%</span><span>100%</span></div>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="info-label">Spread Severity</div>
+        <div class="info-value" id="severityLabel">—</div>
+        <div class="severity-dots" id="severityDots"></div>
+      </div>
+      <div class="info-card">
+        <div class="info-label">Affected Area</div>
+        <div class="info-value" id="affectedArea">—</div>
+        <div class="info-detail" id="affectedDetail">—</div>
+      </div>
+      <div class="info-card full">
+        <div class="info-label">Treatment Steps</div>
+        <div class="treatment-list" id="treatmentList"></div>
+      </div>
+    </div>
+
+    <div class="harvest-banner" id="harvestBanner">
+      <div class="harvest-icon" id="harvestIcon">🌾</div>
+      <div>
+        <strong class="harvest-title-text" id="harvestTitle">—</strong>
+        <span class="harvest-detail-text" id="harvestDetail">—</span>
+      </div>
+    </div>
+
+    <div class="info-card" style="margin-bottom:16px;">
+      <div class="info-label">Estimated Treatment Cost (Sri Lanka 2026)</div>
+      <div class="cost-grid" id="costGrid"></div>
+    </div>
+
+    <div class="weather-alert neutral" id="weatherAlert">
+      <div class="wa-icon">🌤️</div>
+      <div>
+        <div class="wa-title">Checking weather in your area...</div>
+        <div class="wa-text">Fetching local forecast to assess disease spread risk.</div>
+      </div>
+    </div>
+
+    <div class="voice-bar">
+      <div class="vb-left">
+        <div class="vb-icon">🔊</div>
+        <div class="vb-text">Listen to the full diagnosis read aloud</div>
+      </div>
+      <button class="vb-btn" id="voiceBtn" onclick="toggleVoice()">▶ Play Readout</button>
+    </div>
+
+    <div class="chat-section">
+      <div class="chat-header">
+        <div class="chat-dot"></div>
+        <div class="chat-title" id="chatTitle">Ask the AI</div>
+      </div>
+      <div class="quick-chips">
+        <span class="chip" onclick="askChip(this)">Is this safe to eat?</span>
+        <span class="chip" onclick="askChip(this)">Can it spread to other crops?</span>
+        <span class="chip" onclick="askChip(this)">What causes this disease?</span>
+        <span class="chip" onclick="askChip(this)">How do I prevent this?</span>
+        <span class="chip" onclick="askChip(this)">Is the treatment organic?</span>
+      </div>
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="chatInput" placeholder="Ask anything about this disease..." onkeydown="if(event.key==='Enter') sendChat()">
+        <button class="chat-send" onclick="sendChat()">Send</button>
+      </div>
+    </div>
+
+    <button class="restart-btn" onclick="restart()">← Scan Another Leaf</button>
+  </div>
+</div>
+
+<script>
+  // ─────────────────────────────────────────────
+ 
+  const API_KEY = "";
+  // ─────────────────────────────────────────────
+ 
+  const WEATHER_KEY = "";
+ 
+  // ─────────────────────────────────────────────
+
+  const GEMINI_URL = "/.netlify/functions/scan";
+
+  let uploadedFile = null, base64Data = null, mimeType = null;
+  let currentTab = 'upload', camStream = null;
+  let lastDiagnosis = null, voicePlaying = false, chatHistory = [];
+
+  function switchTab(tab) {
+    currentTab = tab;
+    document.getElementById('tabUpload').classList.toggle('active', tab === 'upload');
+    document.getElementById('tabCam').classList.toggle('active', tab === 'cam');
+    document.getElementById('uploadTab').style.display = tab === 'upload' ? 'block' : 'none';
+    document.getElementById('camTab').style.display = tab === 'cam' ? 'block' : 'none';
+    resetImageState();
+    if (tab !== 'cam' && camStream) stopCamera();
+  }
+
+  function handleDragOver(e) { e.preventDefault(); document.getElementById('uploadZone').classList.add('dragover'); }
+  function handleDragLeave(e) { document.getElementById('uploadZone').classList.remove('dragover'); }
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('uploadZone').classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) handleFile(file);
+  }
+
+  function handleFile(file) {
+    if (!file) return;
+    uploadedFile = file; mimeType = file.type;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      base64Data = e.target.result.split(',')[1];
+      document.getElementById('previewImg').src = e.target.result;
+      document.getElementById('previewName').textContent = file.name;
+      document.getElementById('uploadZone').style.display = 'none';
+      document.getElementById('previewWrap').style.display = 'block';
+      document.getElementById('extraInputs').classList.add('visible');
+      document.getElementById('analyzeBtn').classList.add('visible');
+      document.getElementById('errorBanner').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeImage() { resetImageState(); document.getElementById('fileInput').value = ''; }
+
+  function resetImageState() {
+    uploadedFile = null; base64Data = null; mimeType = null;
+    document.getElementById('uploadZone').style.display = 'block';
+    document.getElementById('previewWrap').style.display = 'none';
+    document.getElementById('extraInputs').classList.remove('visible');
+    document.getElementById('analyzeBtn').classList.remove('visible');
+    document.getElementById('errorBanner').style.display = 'none';
+  }
+
+  async function startCamera() {
+    try {
+      camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+      const video = document.getElementById('camVideo');
+      video.srcObject = camStream;
+      video.style.display = 'block';
+      document.getElementById('camPlaceholder').style.display = 'none';
+      document.getElementById('startCamBtn').style.display = 'none';
+      document.getElementById('captureBtn').style.display = 'inline-block';
+    } catch(e) {
+      showError('Camera access denied. Please allow camera access in your browser settings, or use the Upload Photo option.');
+    }
+  }
+
+  function capturePhoto() {
+    const video = document.getElementById('camVideo');
+    const canvas = document.getElementById('camCanvas');
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    const dataURL = canvas.toDataURL('image/jpeg', 0.92);
+    base64Data = dataURL.split(',')[1]; mimeType = 'image/jpeg';
+    const captured = document.getElementById('camCaptured');
+    captured.src = dataURL; captured.style.display = 'block';
+    document.getElementById('camVideo').style.display = 'none';
+    stopCamera();
+    document.getElementById('captureBtn').style.display = 'none';
+    document.getElementById('retakeBtn').style.display = 'inline-block';
+    document.getElementById('extraInputs').classList.add('visible');
+    document.getElementById('analyzeBtn').classList.add('visible');
+    document.getElementById('errorBanner').style.display = 'none';
+  }
+
+  function retakePhoto() {
+    document.getElementById('camCaptured').style.display = 'none';
+    document.getElementById('retakeBtn').style.display = 'none';
+    document.getElementById('extraInputs').classList.remove('visible');
+    document.getElementById('analyzeBtn').classList.remove('visible');
+    base64Data = null; mimeType = null;
+    startCamera();
+  }
+
+  function stopCamera() {
+    if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+  }
+
+  async function analyze() {
+    if (API_KEY === "PASTE_YOUR_GEMINI_API_KEY_HERE") { showError("⚠️ No API key found. Paste your Gemini API key where it says PASTE_YOUR_GEMINI_API_KEY_HERE."); return; }
+    if (!base64Data) { showError("Please upload or capture a leaf photo first."); return; }
+
+    const cropType = document.getElementById('cropType').value || 'unknown crop';
+    const farmSize = document.getElementById('farmSize').value || 'unknown size';
+
+    stopCamera();
+    document.getElementById('inputSection').style.display = 'none';
+    document.getElementById('loading').style.display = 'block';
+    setTimeout(() => document.getElementById('scanFill').style.width = '90%', 50);
+
+    const prompt = `Use these real Sri Lankan 2026 market prices as reference for cost estimations:
+- Mancozeb fungicide: LKR 400–750 per pack
+- Copper Oxychloride / Bordeaux mixture: LKR 715–1,500 per pack
+- Captan fungicide: ~LKR 750 per 50g
+- Agricultural labour wage: LKR 1,500–2,500 per day
+- Knapsack sprayer rental: LKR 500–1,000 per day
+Use these as reference prices where applicable, estimate reasonably for others.
+
+You are LeafScan AI, an expert plant pathologist. Analyze this leaf image carefully and return ONLY a valid JSON object — no markdown, no explanation, no extra text whatsoever.
+
+Context: Crop type: ${cropType}, Farm size: ${farmSize}
+
+Return exactly this JSON structure:
+{
+  "verdict": "healthy|warning|danger",
+  "verdictTitle": "<short verdict>",
+  "verdictSub": "<1 sentence overall summary>",
+  "diseaseName": "<disease name or 'No Disease Detected'>",
+  "diseaseDetail": "<brief description>",
+  "confidence": <number 60-98>,
+  "severity": "none|low|medium|high",
+  "affectedArea": "<e.g. '~35% of leaf surface' or 'None'>",
+  "affectedDetail": "<brief explanation>",
+  "treatments": ["<step 1>", "<step 2>", "<step 3>"],
+  "harvestVerdict": "save|risk|abandon",
+  "harvestTitle": "<e.g. 'Crop Can Be Saved'>",
+  "harvestDetail": "<1-2 sentences>",
+  "costSmall": "<LKR range for small farm>",
+  "costMedium": "<LKR range for medium farm>",
+  "costLarge": "<LKR range for large farm>"
+}`;
+
+    try {
+      const res = await fetch(GEMINI_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ inline_data: { mime_type: mimeType, data: base64Data } }, { text: prompt }] }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 3000 }
+        })
+      });
+      if (!res.ok) { const err = await res.json(); throw new Error(err?.error?.message || `API error ${res.status}`); }
+      const json = await res.json();
+      let text = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      text = text.replace(/```json\n?|```\n?/g, '').trim();
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error("Could not parse AI response");
+      const data = JSON.parse(jsonMatch[0]);
+      lastDiagnosis = data; chatHistory = [];
+      await delay(600);
+      showResults(data);
+      fetchWeather(data);
+    } catch(e) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('inputSection').style.display = 'block';
+      document.getElementById('scanFill').style.width = '0%';
+      showError(`❌ Error: ${e.message}. Check your API key and internet connection.`);
+    }
+  }
+
+  function showResults(data) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('verdict').className = `verdict ${data.verdict}`;
+    document.getElementById('verdictIcon').textContent = data.verdict === 'healthy' ? '✅' : data.verdict === 'warning' ? '⚠️' : '🚨';
+    document.getElementById('verdictTitle').textContent = data.verdictTitle;
+    document.getElementById('verdictSub').textContent = data.verdictSub;
+    document.getElementById('diseaseName').textContent = data.diseaseName;
+    document.getElementById('diseaseDetail').textContent = data.diseaseDetail;
+    document.getElementById('confValue').textContent = data.confidence + '%';
+    setTimeout(() => document.getElementById('confBar').style.width = data.confidence + '%', 100);
+    document.getElementById('severityLabel').textContent = data.severity.charAt(0).toUpperCase() + data.severity.slice(1);
+    const levels = ['low','medium','high'], si = levels.indexOf(data.severity);
+    document.getElementById('severityDots').innerHTML = ['L','M','H'].map((d, i) => {
+      const cls = i <= si && data.severity !== 'none' ? (i===0?'active-low':i===1?'active-med':'active-high') : '';
+      return `<div class="severity-dot ${cls}">${d}</div>`;
+    }).join('');
+    document.getElementById('affectedArea').textContent = data.affectedArea;
+    document.getElementById('affectedDetail').textContent = data.affectedDetail;
+    document.getElementById('treatmentList').innerHTML = data.treatments.map((t, i) =>
+      `<div class="treatment-item"><div class="t-num">${i+1}</div><div>${t}</div></div>`
+    ).join('');
+    document.getElementById('harvestBanner').className = `harvest-banner ${data.harvestVerdict}`;
+    document.getElementById('harvestIcon').textContent = data.harvestVerdict === 'save' ? '🌾' : data.harvestVerdict === 'risk' ? '⚠️' : '❌';
+    document.getElementById('harvestTitle').textContent = data.harvestTitle;
+    document.getElementById('harvestDetail').textContent = data.harvestDetail;
+    document.getElementById('costGrid').innerHTML = `
+      <div class="cost-item"><div class="cost-label">Small Farm</div><div class="cost-value">${data.costSmall}</div></div>
+      <div class="cost-item"><div class="cost-label">Medium Farm</div><div class="cost-value">${data.costMedium}</div></div>
+      <div class="cost-item"><div class="cost-label">Large Farm</div><div class="cost-value">${data.costLarge}</div></div>
+    `;
+    document.getElementById('chatTitle').textContent = `Ask the AI — ${data.diseaseName}`;
+    document.getElementById('chatMessages').innerHTML = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function fetchWeather(diagnosis) {
+    const alert = document.getElementById('weatherAlert');
+    if (WEATHER_KEY === "PASTE_YOUR_OPENWEATHER_KEY_HERE") {
+      alert.className = 'weather-alert neutral';
+      alert.innerHTML = `<div class="wa-icon">🌤️</div><div><div class="wa-title">Weather check unavailable</div><div class="wa-text">Add a free OpenWeatherMap API key to enable live weather risk alerts. Get one free at openweathermap.org</div></div>`;
+      return;
+    }
+    try {
+      const pos = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 6000 }));
+      const { latitude: lat, longitude: lon } = pos.coords;
+      const res = await fetch(`/.netlify/functions/weather?lat=${lat}&lon=${lon}`);
+      const data = await res.json();
+      const next24 = data.list.slice(0, 8);
+      const maxRain = Math.max(...next24.map(f => f.rain?.['3h'] || 0));
+      const maxHumidity = Math.max(...next24.map(f => f.main?.humidity || 0));
+      const city = data.city?.name || 'your area';
+      const isFungal = diagnosis.verdict !== 'healthy' && (
+        diagnosis.diseaseName.toLowerCase().includes('fungal') ||
+        diagnosis.diseaseName.toLowerCase().includes('blight') ||
+        diagnosis.diseaseName.toLowerCase().includes('rust') ||
+        diagnosis.diseaseName.toLowerCase().includes('mildew') ||
+        diagnosis.diseaseName.toLowerCase().includes('rot') ||
+        diagnosis.severity === 'high' || diagnosis.severity === 'medium'
+      );
+      if ((maxRain > 3 || maxHumidity > 85) && isFungal) {
+        alert.className = 'weather-alert rain';
+        alert.innerHTML = `<div class="wa-icon">🌧️</div><div><div class="wa-title">⚠️ Weather Risk Alert — Treat Today!</div><div class="wa-text">Heavy rain or high humidity forecast in ${city} (${maxRain.toFixed(1)}mm / ${maxHumidity}% humidity). Wet conditions accelerate fungal spread. Apply treatment before the rain arrives.</div></div>`;
+      } else if ((maxRain > 1 || maxHumidity > 70) && isFungal) {
+        alert.className = 'weather-alert rain';
+        alert.innerHTML = `<div class="wa-icon">🌦️</div><div><div class="wa-title">Moderate Weather Risk</div><div class="wa-text">Some rain or elevated humidity expected in ${city}. Wet conditions can worsen this disease — consider treating soon.</div></div>`;
+      } else {
+        alert.className = 'weather-alert good';
+        alert.innerHTML = `<div class="wa-icon">☀️</div><div><div class="wa-title">Weather Looks Good</div><div class="wa-text">No heavy rain forecast in ${city} for the next 24 hours. Dry conditions are favorable for treatment and recovery.</div></div>`;
+      }
+    } catch(e) {
+      alert.className = 'weather-alert neutral';
+      alert.innerHTML = `<div class="wa-icon">📍</div><div><div class="wa-title">Location access needed</div><div class="wa-text">Allow location access in your browser to get a local weather risk alert for your farm area.</div></div>`;
+    }
+  }
+
+  function toggleVoice() {
+    const btn = document.getElementById('voiceBtn');
+    if (!lastDiagnosis) return;
+    if (voicePlaying) {
+      speechSynthesis.cancel(); voicePlaying = false;
+      btn.textContent = '▶ Play Readout'; btn.classList.remove('playing'); return;
+    }
+    if (!('speechSynthesis' in window)) { alert('Voice readout is not supported in your browser. Try Chrome or Edge.'); return; }
+    const d = lastDiagnosis;
+    const text = `Diagnosis complete. Disease detected: ${d.diseaseName}. ${d.diseaseDetail}. AI confidence: ${d.confidence} percent. Severity: ${d.severity}. Affected area: ${d.affectedArea}. Treatment steps: ${d.treatments.join('. ')}. Harvest verdict: ${d.harvestTitle}. ${d.harvestDetail}. Estimated treatment cost for a small farm: ${d.costSmall}.`;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.88;
+    utterance.onend = () => { voicePlaying = false; btn.textContent = '▶ Play Readout'; btn.classList.remove('playing'); };
+    utterance.onerror = () => { voicePlaying = false; btn.textContent = '▶ Play Readout'; btn.classList.remove('playing'); };
+    speechSynthesis.speak(utterance);
+    voicePlaying = true; btn.textContent = '⏹ Stop'; btn.classList.add('playing');
+  }
+
+  function askChip(el) { document.getElementById('chatInput').value = el.textContent; sendChat(); }
+
+  async function sendChat() {
+    if (API_KEY === "PASTE_YOUR_GEMINI_API_KEY_HERE") return;
+    const input = document.getElementById('chatInput');
+    const msgs = document.getElementById('chatMessages');
+    const q = input.value.trim();
+    if (!q || !lastDiagnosis) return;
+    input.value = '';
+
+    const userEl = document.createElement('div');
+    userEl.className = 'chat-msg user'; userEl.textContent = q;
+    msgs.appendChild(userEl);
+
+    const typingEl = document.createElement('div');
+    typingEl.className = 'chat-msg ai typing'; typingEl.textContent = 'Thinking...';
+    msgs.appendChild(typingEl);
+    msgs.scrollTop = msgs.scrollHeight;
+
+    chatHistory.push({ role: "user", content: q });
+
+    const context = `You are LeafScan AI, a helpful plant disease expert. The user just got this diagnosis: Disease: ${lastDiagnosis.diseaseName}. Severity: ${lastDiagnosis.severity}. Affected area: ${lastDiagnosis.affectedArea}. Verdict: ${lastDiagnosis.verdictTitle}. Treatments: ${lastDiagnosis.treatments.join('; ')}. Answer the user's question in 2-4 sentences. Be practical and helpful. Plain text only.`;
+
+    const messages = [
+      { role: "user", parts: [{ text: context }] },
+      { role: "model", parts: [{ text: "Understood. I'm ready to answer questions about this diagnosis." }] },
+      ...chatHistory.slice(-6).map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] }))
+    ];
+
+    try {
+      const res = await fetch(GEMINI_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: messages, generationConfig: { temperature: 0.5, maxOutputTokens: 300 } })
+      });
+      const json = await res.json();
+      const answer = json.candidates?.[0]?.content?.parts?.[0]?.text || "I'm not sure about that. Please consult an agronomist for professional advice.";
+      typingEl.className = 'chat-msg ai'; typingEl.textContent = answer;
+      chatHistory.push({ role: 'model', content: answer });
+    } catch(e) {
+      typingEl.className = 'chat-msg ai'; typingEl.textContent = "Couldn't get a response. Check your connection and try again.";
+    }
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function showError(msg) { const b = document.getElementById('errorBanner'); b.textContent = msg; b.style.display = 'block'; }
+
+  function restart() {
+    speechSynthesis.cancel(); voicePlaying = false;
+    document.getElementById('voiceBtn').textContent = '▶ Play Readout';
+    document.getElementById('voiceBtn').classList.remove('playing');
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('inputSection').style.display = 'block';
+    document.getElementById('scanFill').style.width = '0%';
+    document.getElementById('fileInput').value = '';
+    document.getElementById('chatMessages').innerHTML = '';
+    document.getElementById('chatInput').value = '';
+    resetImageState(); lastDiagnosis = null; chatHistory = [];
+    document.getElementById('weatherAlert').className = 'weather-alert neutral';
+    document.getElementById('weatherAlert').innerHTML = `<div class="wa-icon">🌤️</div><div><div class="wa-title">Checking weather in your area...</div><div class="wa-text">Fetching local forecast to assess disease spread risk.</div></div>`;
+    switchTab('upload');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
