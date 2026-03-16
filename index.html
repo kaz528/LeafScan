@@ -475,17 +475,26 @@
     document.getElementById('loading').style.display = 'block';
     setTimeout(() => document.getElementById('scanFill').style.width = '90%', 50);
 
-    const prompt = `Use these real Sri Lankan 2026 market prices as reference for cost estimations:
-- Mancozeb fungicide: LKR 400–750 per pack
-- Copper Oxychloride / Bordeaux mixture: LKR 715–1,500 per pack
-- Captan fungicide: ~LKR 750 per 50g
-- Agricultural labour wage: LKR 1,500–2,500 per day
-- Knapsack sprayer rental: LKR 500–1,000 per day
-Use these as reference prices where applicable, estimate reasonably for others.
+    const prompt = `First, determine if this image contains a plant leaf or any part of a plant.
+    If it does NOT contain a plant leaf, return exactly this JSON and nothing else:
+   {
+    "notALeaf": true,
+    "message": "<describe what you actually see in the image in a friendly, slightly humorous way, then ask them to upload a leaf photo. e.g. 'That looks like a fluffy cat, not a sick crop! LeafScan works best with plant leaf photos — try uploading a close-up of a leaf.'>"
+    }
 
-You are LeafScan AI, an expert plant pathologist. Analyze this leaf image carefully and return ONLY a valid JSON object — no markdown, no explanation, no extra text whatsoever.
+   If it DOES contain a plant leaf, continue with the full analysis below.
 
-Context: Crop type: ${cropType}, Farm size: ${farmSize}
+   Use these real Sri Lankan 2026 market prices as reference for cost estimations:
+   - Mancozeb fungicide: LKR 400–750 per pack
+   - Copper Oxychloride / Bordeaux mixture: LKR 715–1,500 per pack
+   - Captan fungicide: ~LKR 750 per 50g
+   - Agricultural labour wage: LKR 1,500–2,500 per day
+   - Knapsack sprayer rental: LKR 500–1,000 per day
+   Use these as reference prices where applicable, estimate reasonably for others.
+
+  You are LeafScan AI, an expert plant pathologist. Analyze this leaf image carefully and return ONLY a valid JSON object — no markdown, no explanation, no extra text whatsoever.
+
+  Context: Crop type: ${cropType}, Farm size: ${farmSize}
 
 Return exactly this JSON structure:
 {
@@ -506,7 +515,6 @@ Return exactly this JSON structure:
   "costMedium": "<LKR range for medium farm>",
   "costLarge": "<LKR range for large farm>"
 }`;
-
     try {
       const res = await fetch(GEMINI_URL, {
         method: "POST",
@@ -523,6 +531,15 @@ Return exactly this JSON structure:
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error("Could not parse AI response");
       const data = JSON.parse(jsonMatch[0]);
+
+      if (data.notALeaf) {
+       document.getElementById('loading').style.display = 'none';
+       document.getElementById('inputSection').style.display = 'block';
+       document.getElementById('scanFill').style.width = '0%';
+       showError(`🌿 ${data.message}`);
+       return;
+      }
+
       lastDiagnosis = data; chatHistory = [];
       await delay(600);
       showResults(data);
